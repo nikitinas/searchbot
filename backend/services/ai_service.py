@@ -5,9 +5,13 @@ Uses OpenAI or Anthropic to generate research summaries
 
 import os
 import json
-from typing import List, Dict
+import time
+import logging
+from typing import List, Dict, Optional
 from openai import OpenAI
 # Alternative: from anthropic import Anthropic
+
+logger = logging.getLogger(__name__)
 
 from models.search_models import (
     SearchRequestPayload, 
@@ -36,36 +40,70 @@ class AIService:
     async def generate_research_result(
         self,
         request: SearchRequestPayload,
-        sources: List[Dict]
+        sources: List[Dict],
+        request_id: Optional[str] = None
     ) -> SearchResultPayload:
         """
         Generate structured research result using AI
         """
+        log_extra = {"request_id": request_id} if request_id else {}
+        
         # Build prompt with sources and request
         prompt = self._build_research_prompt(request, sources)
+        prompt_size = len(prompt)
         
-        # Call OpenAI API
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a research assistant that provides structured, factual research results. Always cite sources and provide actionable recommendations."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.7,
-            response_format={"type": "json_object"}  # Force JSON response
+        logger.info(
+            f"🤖 External: OpenAI API | Model: {self.model} | Prompt size: {prompt_size} chars | Sources: {len(sources)}",
+            extra=log_extra
         )
         
-        # Parse JSON response
-        result_data = json.loads(response.choices[0].message.content)
+        api_start = time.time()
         
-        # Transform to SearchResultPayload
-        return self._parse_ai_response(result_data, sources)
+        try:
+            # Call OpenAI API
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a research assistant that provides structured, factual research results. Always cite sources and provide actionable recommendations."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.7,
+                response_format={"type": "json_object"}  # Force JSON response
+            )
+            
+            api_time = time.time() - api_start
+            
+            # Extract usage information if available
+            usage_info = ""
+            if hasattr(response, 'usage'):
+                usage = response.usage
+                usage_info = f" | Tokens: {usage.prompt_tokens} prompt + {usage.completion_tokens} completion = {usage.total_tokens} total"
+            
+            logger.info(
+                f"✓ OpenAI API: Success | Time: {api_time:.3f}s{usage_info}",
+                extra=log_extra
+            )
+            
+            # Parse JSON response
+            result_data = json.loads(response.choices[0].message.content)
+            
+            # Transform to SearchResultPayload
+            return self._parse_ai_response(result_data, sources)
+            
+        except Exception as e:
+            api_time = time.time() - api_start
+            logger.error(
+                f"✗ OpenAI API: Failed after {api_time:.3f}s | Error: {str(e)}",
+                extra=log_extra,
+                exc_info=True
+            )
+            raise
     
     def _build_research_prompt(self, request: SearchRequestPayload, sources: List[Dict]) -> str:
         """Build the prompt for AI research generation"""
