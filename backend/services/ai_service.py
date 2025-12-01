@@ -1,0 +1,144 @@
+"""
+AI Service for generating structured research results
+Uses OpenAI or Anthropic to generate research summaries
+"""
+
+import os
+import json
+from typing import List, Dict
+from openai import OpenAI
+# Alternative: from anthropic import Anthropic
+
+from models.search_models import (
+    SearchRequestPayload, 
+    SearchResultPayload, 
+    SolutionStep, 
+    DecisionFactor, 
+    SourceLink
+)
+
+
+class AIService:
+    def __init__(self):
+        # Initialize OpenAI client
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable not set")
+        
+        self.client = OpenAI(api_key=api_key)
+        self.model = "gpt-4-turbo-preview"  # or "gpt-3.5-turbo" for cheaper option
+    
+    async def generate_research_result(
+        self,
+        request: SearchRequestPayload,
+        sources: List[Dict]
+    ) -> SearchResultPayload:
+        """
+        Generate structured research result using AI
+        """
+        # Build prompt with sources and request
+        prompt = self._build_research_prompt(request, sources)
+        
+        # Call OpenAI API
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a research assistant that provides structured, factual research results. Always cite sources and provide actionable recommendations."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.7,
+            response_format={"type": "json_object"}  # Force JSON response
+        )
+        
+        # Parse JSON response
+        result_data = json.loads(response.choices[0].message.content)
+        
+        # Transform to SearchResultPayload
+        return self._parse_ai_response(result_data, sources)
+    
+    def _build_research_prompt(self, request: SearchRequestPayload, sources: List[Dict]) -> str:
+        """Build the prompt for AI research generation"""
+        sources_text = "\n".join([
+            f"- {s['title']}: {s['snippet']} ({s['url']})"
+            for s in sources[:10]  # Limit to top 10 sources
+        ])
+        
+        prompt = f"""
+Research Request: {request.description}
+Category: {request.category}
+Priority: {request.priority}
+
+Available Sources:
+{sources_text}
+
+Generate a comprehensive research result with:
+1. A concise summary (2-3 sentences)
+2. 3-5 actionable steps with clear titles and descriptions
+3. 3-5 key decision factors with details
+4. Estimated time to complete (in minutes)
+5. Difficulty level (easy/medium/hard)
+6. 3-5 recommended next actions
+
+Format your response as JSON matching this structure:
+{{
+  "summary": "...",
+  "steps": [{{"id": "...", "title": "...", "description": "..."}}],
+  "decisionFactors": [{{"id": "...", "label": "...", "detail": "..."}}],
+  "estimatedTimeMinutes": 10,
+  "difficulty": "easy",
+  "recommendedActions": ["..."]
+}}
+"""
+        return prompt
+    
+    def _parse_ai_response(self, data: Dict, sources: List[Dict]) -> SearchResultPayload:
+        """Parse AI response and combine with source data"""
+        
+        # Map sources to SourceLink format
+        source_links = [
+            SourceLink(
+                id=f"src-{i}",
+                title=s.get("title", "Source"),
+                url=s.get("url", ""),
+                credibility=s.get("credibility", 75),
+                snippet=s.get("snippet", "")
+            )
+            for i, s in enumerate(sources[:5])  # Top 5 sources
+        ]
+        
+        # Parse steps
+        steps = [
+            SolutionStep(
+                id=f"step-{i}",
+                title=step.get("title", ""),
+                description=step.get("description", "")
+            )
+            for i, step in enumerate(data.get("steps", []))
+        ]
+        
+        # Parse decision factors
+        factors = [
+            DecisionFactor(
+                id=f"factor-{i}",
+                label=factor.get("label", ""),
+                detail=factor.get("detail", "")
+            )
+            for i, factor in enumerate(data.get("decisionFactors", []))
+        ]
+        
+        return SearchResultPayload(
+            summary=data.get("summary", ""),
+            steps=steps,
+            decisionFactors=factors,
+            sources=source_links,
+            estimatedTimeMinutes=data.get("estimatedTimeMinutes", 10),
+            difficulty=data.get("difficulty", "medium"),
+            recommendedActions=data.get("recommendedActions", [])
+        )
+

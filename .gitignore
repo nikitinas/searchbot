@@ -1,1 +1,19 @@
 /.idea
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# EAS
+*.p12
+*.key
+*.mobileprovision
+*.p8
+*.jks
+*.keystore
+
+# Environment
+.env
+.env.local
+.env.*.local

@@ -1,0 +1,55 @@
+name: EAS Build Preview
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'preview/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build for'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+
+jobs:
+  build:
+    name: Build Preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: 'npm'
+          cache-dependency-path: SearchBotApp/package-lock.json
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        working-directory: SearchBotApp
+        run: npm ci
+
+      - name: Build Android
+        if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || github.event.inputs.platform == ''
+        working-directory: SearchBotApp
+        run: eas build --profile preview --platform android --non-interactive --no-wait
+
+      - name: Build iOS
+        if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || github.event.inputs.platform == ''
+        working-directory: SearchBotApp
+        run: eas build --profile preview --platform ios --non-interactive --no-wait
+
