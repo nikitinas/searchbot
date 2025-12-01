@@ -25,8 +25,13 @@ class AIService:
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set")
         
-        self.client = OpenAI(api_key=api_key)
-        self.model = "gpt-4-turbo-preview"  # or "gpt-3.5-turbo" for cheaper option
+        base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
+        client_kwargs = {"api_key": api_key}
+        if base_url:
+            client_kwargs["base_url"] = base_url
+        
+        self.client = OpenAI(**client_kwargs)
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4-turbo-preview")  # or "gpt-3.5-turbo" for cheaper option
     
     async def generate_research_result(
         self,
