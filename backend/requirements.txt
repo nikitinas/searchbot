@@ -1,0 +1,31 @@
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-dotenv==1.0.0
+pydantic==2.5.3
+
+# AI/LLM
+openai==1.10.0
+# Alternative: anthropic==0.18.0
+
+# Web Scraping
+beautifulsoup4==4.12.2
+requests==2.31.0
+googlesearch-python==1.2.3
+# Alternative: serpapi==0.1.5  # For better search results (paid)
+
+# Image Processing (if needed)
+Pillow==10.2.0
+
+# Database (optional)
+# sqlalchemy==2.0.25
+# psycopg2-binary==2.9.9
+# alembic==1.13.1
+
+# Caching (optional)
+# redis==5.0.1
+
+# Testing
+pytest==7.4.4
+httpx==0.26.0
+
