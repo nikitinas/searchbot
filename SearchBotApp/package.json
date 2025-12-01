@@ -6,7 +6,17 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:dev": "eas build --profile development --platform all",
+    "build:dev:ios": "eas build --profile development --platform ios",
+    "build:dev:android": "eas build --profile development --platform android",
+    "build:preview": "eas build --profile preview --platform all",
+    "build:preview:ios": "eas build --profile preview --platform ios",
+    "build:preview:android": "eas build --profile preview --platform android",
+    "build:production": "eas build --profile production --platform all",
+    "update": "eas update --branch preview",
+    "submit:ios": "eas submit --platform ios",
+    "submit:android": "eas submit --platform android"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -17,6 +27,7 @@
     "@reduxjs/toolkit": "^2.11.0",
     "axios": "^1.13.2",
     "expo": "~54.0.25",
+    "expo-dev-client": "~6.0.18",
     "expo-linear-gradient": "~15.0.7",
     "expo-status-bar": "~3.0.8",
     "nanoid": "^5.1.6",
@@ -33,6 +44,7 @@
     "react-redux": "^9.2.0"
   },
   "devDependencies": {
+    "@expo/config-plugins": "^54.0.2",
     "@types/expo__vector-icons": "^9.0.1",
     "@types/react": "~19.1.0",
     "babel-plugin-module-resolver": "^5.0.2",
