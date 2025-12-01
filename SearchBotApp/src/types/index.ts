@@ -29,6 +29,7 @@ export interface SearchRequestPayload {
   imageUri?: string;
   voiceTranscript?: string;
   createdAt: string;
+  language?: string; // ISO 639-1 language code (e.g., 'en', 'es', 'fr')
 }
 
 export interface SearchResultPayload {

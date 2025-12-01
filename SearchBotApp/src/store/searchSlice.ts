@@ -15,6 +15,7 @@ export interface ExecuteSearchInput {
   priority: PriorityLevel;
   imageUri?: string;
   voiceTranscript?: string;
+  language?: string; // ISO 639-1 language code
 }
 
 interface SearchState {

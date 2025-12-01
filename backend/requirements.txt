@@ -26,6 +26,9 @@ Pillow==10.2.0
 # Caching (optional)
 # redis==5.0.1
 
+# Language Detection
+langdetect==1.0.9
+
 # Testing
 pytest==7.4.4
 httpx==0.26.0

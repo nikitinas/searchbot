@@ -34,6 +34,7 @@ class SearchRequestPayload(BaseModel):
     imageUri: Optional[str] = None
     voiceTranscript: Optional[str] = None
     createdAt: str
+    language: Optional[str] = None  # ISO 639-1 language code (e.g., 'en', 'es', 'fr')
 
 
 class SearchResultPayload(BaseModel):

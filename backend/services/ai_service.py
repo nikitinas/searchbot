@@ -60,13 +60,19 @@ class AIService:
         api_start = time.time()
         
         try:
+            # Build system message with language context
+            language = request.language or "en"
+            system_message = "You are a research assistant that provides structured, factual research results. Always cite sources and provide actionable recommendations."
+            if language != "en":
+                system_message += f" Respond entirely in the user's language (ISO code: {language})."
+            
             # Call OpenAI API
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a research assistant that provides structured, factual research results. Always cite sources and provide actionable recommendations."
+                        "content": system_message
                     },
                     {
                         "role": "user",
@@ -112,10 +118,30 @@ class AIService:
             for s in sources[:10]  # Limit to top 10 sources
         ])
         
+        # Language mapping for better prompts
+        language_names = {
+            "en": "English",
+            "es": "Spanish",
+            "fr": "French",
+            "de": "German",
+            "it": "Italian",
+            "pt": "Portuguese",
+            "ru": "Russian",
+            "ja": "Japanese",
+            "ko": "Korean",
+            "zh": "Chinese",
+            "ar": "Arabic",
+            "hi": "Hindi",
+        }
+        
+        language_name = language_names.get(request.language or "en", "English")
+        language_instruction = f"IMPORTANT: Respond entirely in {language_name}. All text (summary, steps, decision factors, recommended actions) must be in {language_name}." if request.language and request.language != "en" else ""
+        
         prompt = f"""
 Research Request: {request.description}
 Category: {request.category}
 Priority: {request.priority}
+{language_instruction}
 
 Available Sources:
 {sources_text}
@@ -127,6 +153,8 @@ Generate a comprehensive research result with:
 4. Estimated time to complete (in minutes)
 5. Difficulty level (easy/medium/hard)
 6. 3-5 recommended next actions
+
+{language_instruction}
 
 Format your response as JSON matching this structure:
 {{

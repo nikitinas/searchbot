@@ -10,6 +10,7 @@ import time
 import logging
 import uuid
 from dotenv import load_dotenv
+from langdetect import detect, LangDetectException
 
 from services.search_engine import SearchEngine
 from services.ai_service import AIService
@@ -156,8 +157,30 @@ async def search(request: SearchRequestPayload, http_request: Request):
     Main search endpoint - processes research requests and returns structured results
     """
     request_id = getattr(http_request.state, 'request_id', 'unknown')
+    
+    # Detect language if not provided
+    detected_language = request.language
+    if not detected_language:
+        try:
+            # Detect language from description
+            detected_language = detect(request.description)
+            logger.info(
+                f"🌐 Detected language: {detected_language}",
+                extra={"request_id": request_id}
+            )
+        except LangDetectException:
+            # Fallback to English if detection fails
+            detected_language = "en"
+            logger.warning(
+                f"⚠️ Language detection failed, defaulting to 'en'",
+                extra={"request_id": request_id}
+            )
+    
+    # Update request with detected language
+    request.language = detected_language
+    
     logger.info(
-        f"🔍 Starting search: query='{request.description[:50]}...' category={request.category} priority={request.priority}",
+        f"🔍 Starting search: query='{request.description[:50]}...' category={request.category} priority={request.priority} language={detected_language}",
         extra={"request_id": request_id}
     )
     

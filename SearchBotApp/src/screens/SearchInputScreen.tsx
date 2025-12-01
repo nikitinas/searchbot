@@ -12,6 +12,7 @@ import { useImagePicker } from '@/hooks/useImagePicker';
 import { useAppDispatch } from '@/store/hooks';
 import { executeSearch } from '@/store/searchSlice';
 import { palette } from '@/theme/colors';
+import { detectLanguage } from '@/utils/languageDetection';
 
 export type SearchInputProps = NativeStackScreenProps<AppStackParamList, 'SearchInput'>;
 
@@ -37,6 +38,10 @@ export const SearchInputScreen = ({ navigation }: SearchInputProps) => {
     if (isSubmitDisabled) {
       return;
     }
+    
+    // Detect language from user input
+    const detectedLanguage = detectLanguage(description.trim());
+    
     dispatch(
       executeSearch({
         description: description.trim(),
@@ -44,6 +49,7 @@ export const SearchInputScreen = ({ navigation }: SearchInputProps) => {
         priority,
         imageUri: asset?.uri,
         voiceTranscript: transcript || undefined,
+        language: detectedLanguage,
       }),
     );
     navigation.navigate('Processing');
