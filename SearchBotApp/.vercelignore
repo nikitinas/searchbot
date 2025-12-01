@@ -1,0 +1,34 @@
+# Mobile build artifacts
+android/
+ios/
+.eas/
+.expo/
+
+# Development files
+node_modules/
+*.log
+.DS_Store
+
+# Environment files (use Vercel's environment variables instead)
+.env
+.env.local
+.env.*.local
+
+# Build outputs (Vercel will generate these)
+dist/
+web-build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.pem
+*.key
+

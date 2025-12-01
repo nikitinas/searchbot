@@ -74,7 +74,10 @@ app = FastAPI(title="SearchBot API", version="1.0.0")
 api_router = APIRouter(prefix="/v1")
 
 # CORS configuration
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:8081").split(",")
+# Default origins: localhost for development + common Expo ports
+default_origins = "http://localhost:8081,http://localhost:19006,exp://localhost:8081"
+cors_origins_env = os.getenv("CORS_ORIGINS", default_origins)
+cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,

@@ -3,7 +3,21 @@ import { apiClient } from './apiClient';
 import { mockResults } from '@/data/mockResults';
 import { SearchRequestPayload, SearchResultPayload } from '@/types';
 
-const LIVE_SEARCH_ENABLED = process.env.EXPO_PUBLIC_ENABLE_LIVE_SEARCH === 'true';
+// Enable live search if explicitly set to 'true', OR if API URL points to localhost (for local development)
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
+const EXPLICIT_ENABLE = process.env.EXPO_PUBLIC_ENABLE_LIVE_SEARCH === 'true';
+const IS_LOCALHOST = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
+const LIVE_SEARCH_ENABLED = EXPLICIT_ENABLE || IS_LOCALHOST;
+
+// Debug logging
+if (__DEV__) {
+  console.log('🔍 SearchService Configuration:');
+  console.log('  EXPO_PUBLIC_ENABLE_LIVE_SEARCH:', process.env.EXPO_PUBLIC_ENABLE_LIVE_SEARCH);
+  console.log('  EXPO_PUBLIC_API_URL:', API_URL);
+  console.log('  Is localhost?:', IS_LOCALHOST);
+  console.log('  LIVE_SEARCH_ENABLED:', LIVE_SEARCH_ENABLED);
+  console.log('  (Auto-enabled for localhost development)');
+}
 
 const buildMockResponse = (request: SearchRequestPayload): SearchResultPayload => {
   const seed = request.category.toLowerCase();
@@ -119,12 +133,33 @@ const buildMockResponse = (request: SearchRequestPayload): SearchResultPayload =
 export const searchService = {
   async runSearch(request: SearchRequestPayload): Promise<SearchResultPayload> {
     if (LIVE_SEARCH_ENABLED) {
+      console.log('🚀 Attempting live search with backend API...');
+      console.log('  API URL:', process.env.EXPO_PUBLIC_API_URL);
+      console.log('  Request:', { id: request.id, description: request.description.substring(0, 50) + '...' });
+      
       try {
         const { data } = await apiClient.post<SearchResultPayload>('/search', request);
+        console.log('✅ Live search successful!');
         return data;
-      } catch (error) {
-        console.warn('Live search failed, falling back to mock data', error);
+      } catch (error: any) {
+        console.error('❌ Live search failed:', error?.message || error);
+        console.error('  Error details:', {
+          status: error?.response?.status,
+          statusText: error?.response?.statusText,
+          data: error?.response?.data,
+          url: error?.config?.url,
+          baseURL: error?.config?.baseURL,
+        });
+        console.error('  Full error object:', error);
+        console.warn('⚠️  Falling back to mock data');
+        console.warn('💡 Check:');
+        console.warn('  1. Is backend running? curl http://localhost:8000/health');
+        console.warn('  2. Is API URL correct?', process.env.EXPO_PUBLIC_API_URL);
+        console.warn('  3. Check Network tab for CORS or connection errors');
       }
+    } else {
+      console.log('📝 Using mock data (LIVE_SEARCH_ENABLED is false)');
+      console.log('  To enable live search, set EXPO_PUBLIC_ENABLE_LIVE_SEARCH=true');
     }
 
     // simulate research latency
